@@ -5,7 +5,7 @@ function createElement(type, props, ...children) {
     type,
     props: {
       ...props,
-      children: children.map((child) => {
+      children: children.flat().map((child) => {
         return typeof child !== 'object' ? createTextElement(child) : child;
       }),
     },
@@ -60,19 +60,29 @@ function workloop() {
 
 function performUnitOfWork(fiber) {
   // 处理当前 fiber：创建 DOM，设置 props，插入当前 dom 到 parent
-  if (!fiber.stateNode) {
-    fiber.stateNode =
-      fiber.type === 'HostText'
-        ? document.createTextNode('')
-        : document.createElement(fiber.type);
-    Object.keys(fiber.props)
-      .filter(isProperty)
-      .forEach((key) => {
-        fiber.stateNode[key] = fiber.props[key];
-      });
-  }
-  if (fiber.return) {
-    fiber.return.stateNode.appendChild(fiber.stateNode);
+  const isFunctionComponent = fiber.type instanceof Function;
+  if (isFunctionComponent) {
+    fiber.props.children = [fiber.type(fiber.props)];
+  } else {
+    if (!fiber.stateNode) {
+      fiber.stateNode =
+        fiber.type === 'HostText'
+          ? document.createTextNode('')
+          : document.createElement(fiber.type);
+      Object.keys(fiber.props)
+        .filter(isProperty)
+        .forEach((key) => {
+          fiber.stateNode[key] = fiber.props[key];
+        });
+    }
+    if (fiber.return) {
+      // 往上查找，直到有一个节点存在 stateNode
+      let domParentFiber = fiber.return;
+      while (!domParentFiber.stateNode) {
+        domParentFiber = domParentFiber.return;
+      }
+      domParentFiber.stateNode.appendChild(fiber.stateNode);
+    }
   }
   // 初始化 children 的 fiber
   let prevSibling = null;
