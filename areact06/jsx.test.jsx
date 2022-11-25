@@ -236,3 +236,44 @@ describe('event binding', () => {
     expect(increaseSpy).toBeCalledTimes(2);
   });
 });
+
+describe('Reconciler', () => {
+  it('should support DOM CRUD', async () => {
+    const container = document.createElement('div');
+    function App() {
+      const [count, setCount] = AReact.useState(2);
+
+      return (
+        <div>
+          {count}
+          <button onClick={() => setCount((count) => count + 1)}>+</button>
+          <button onClick={() => setCount((count) => count - 1)}>-</button>
+          <ul>
+            {Array(count)
+              .fill(1)
+              .map((val, index) => (
+                <li>{index}</li>
+              ))}
+          </ul>
+        </div>
+      );
+    }
+    const root = AReact.createRoot(container);
+    await act(() => {
+      root.render(<App />);
+    });
+    await act(() => {
+      container.querySelectorAll('button')[0].click();
+    });
+    expect(container.innerHTML).toBe(
+      '<div>3<button>+</button><button>-</button><ul><li>0</li><li>1</li><li>2</li></ul></div>'
+    );
+    await act(() => {
+      container.querySelectorAll('button')[1].click();
+      container.querySelectorAll('button')[1].click();
+    });
+    expect(container.innerHTML).toBe(
+      '<div>1<button>+</button><button>-</button><ul><li>0</li></ul></div>'
+    );
+  });
+});
