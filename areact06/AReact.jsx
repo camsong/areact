@@ -22,7 +22,8 @@ function createTextElement(text) {
   };
 }
 
-const isProperty = (key) => key !== 'children';
+const isEvent = (key) => key.startsWith('on');
+const isProperty = (key) => key !== 'children' && !isEvent(key);
 let workInProgress = null;
 let workInProgressRoot = null;
 let currentHookFiber = null;
@@ -81,6 +82,13 @@ function performUnitOfWork(fiber) {
         .filter(isProperty)
         .forEach((key) => {
           fiber.stateNode[key] = fiber.props[key];
+        });
+
+      Object.keys(fiber.props)
+        .filter(isEvent)
+        .forEach((key) => {
+          const eventName = key.toLowerCase().substring(2); // onClick => click
+          fiber.stateNode.addEventListener(eventName, fiber.props[key]);
         });
     }
     if (fiber.return) {
